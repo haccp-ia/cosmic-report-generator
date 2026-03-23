@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Reviews — Gerador de Relatórios</title>
+<style>
+  :root {
+    --cosmic: #5B50A2;
+    --cosmic-dark: #3D3570;
+    --teal: #00B4D8;
+    --gold: #F59E0B;
+    --green: #10B981;
+    --red: #EF4444;
+    --blue: #3B82F6;
+    --gray: #64748B;
+    --lgray: #E2E8F0;
+    --offwhite: #F8FAFC;
+    --dark: #0F172A;
+    --white: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--offwhite);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--cosmic);
+    color: white;
+    padding: 1.2rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 12px rgba(91,80,162,.35);
+  }
+  .logo {
+    background: white;
+    color: var(--cosmic);
+    font-weight: 900;
+    font-size: 1.1rem;
+    width: 2.2rem; height: 2.2rem;
+    display: grid; place-items: center;
+    border-radius: 4px;
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; }
+  header span { font-size: .85rem; opacity: .75; margin-left: auto; }
+
+  .search-wrap {
+    max-width: 720px;
+    margin: 2.5rem auto;
+    padding: 0 1rem;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,.06);
+  }
+  .card h2 { font-size: 1.3rem; margin-bottom: .4rem; color: var(--cosmic); }
+  .card p  { color: var(--gray); font-size: .9rem; margin-bottom: 1.4rem; }
+
+  label { font-size: .85rem; font-weight: 600; color: var(--dark); display: block; margin-bottom: .35rem; }
+  input[type=text], input[type=password] {
+    width: 100%; padding: .7rem 1rem;
+    border: 1.5px solid var(--lgray);
+    border-radius: 8px; font-size: .95rem;
+    outline: none; transition: border .2s;
+    margin-bottom: 1rem;
+  }
+  input:focus { border-color: var(--cosmic); }
+
+  .api-row {
+    display: flex; gap: .6rem; align-items: flex-end; margin-bottom: 1rem;
+  }
+  .api-row > div { flex: 1; margin-bottom: 0; }
+  .api-row input { margin-bottom: 0; }
+
+  .eye-btn {
+    background: var(--lgray); border: none; border-radius: 8px;
+    padding: .7rem .9rem; cursor: pointer; font-size: .9rem; white-space: nowrap;
+  }
+
+  .btn {
+    background: var(--cosmic); color: white;
+    border: none; border-radius: 8px;
+    padding: .75rem 1.8rem; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .btn:hover { background: var(--cosmic-dark); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .hint {
+    margin-top: 1rem;
+    background: #EDE9FE; border-radius: 8px;
+    padding: .8rem 1rem; font-size: .82rem; color: var(--cosmic-dark);
+    line-height: 1.5;
+  }
+  .hint a { color: var(--cosmic); font-weight: 600; }
+  .hint code { background: white; padding: .1rem .35rem; border-radius: 4px; font-size: .8rem; }
+
+  .api-badges { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; }
+  .api-badge {
+    font-size: .72rem; font-weight: 700; padding: .2rem .6rem;
+    border-radius: 100px; display: flex; align-items: center; gap: .3rem;
+  }
+  .api-badge.on  { background: #D1FAE5; color: #065F46; }
+  .api-badge.off { background: #FEE2E2; color: #991B1B; }
+
+  #status {
+    max-width: 720px; margin: 0 auto 1rem; padding: 0 1rem;
+    display: none;
+  }
+  .status-msg {
+    background: white; border-radius: 8px; padding: 1rem 1.4rem;
+    font-size: .9rem; display: flex; align-items: center; gap: .8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .status-msg.error   { border-left: 4px solid var(--red);   color: #7F1D1D; }
+  .status-msg.loading { border-left: 4px solid var(--cosmic); color: var(--cosmic-dark); }
+  .spinner {
+    width: 1.2rem; height: 1.2rem;
+    border: 3px solid var(--lgray);
+    border-top-color: var(--cosmic);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #report { display: none; max-width: 900px; margin: 0 auto 3rem; padding: 0 1rem; }
+
+  .report-actions {
+    display: flex; gap: .8rem; margin-bottom: 1.2rem; justify-content: flex-end;
+  }
+  .btn-outline {
+    background: white; color: var(--cosmic);
+    border: 2px solid var(--cosmic); border-radius: 8px;
+    padding: .55rem 1.2rem; font-size: .9rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: .4rem;
+  }
+  .btn-outline:hover { background: var(--cosmic); color: white; }
+
+  .report-page {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .rp-header {
+    background: var(--cosmic);
+    color: white;
+    padding: 1.8rem 2.2rem 1.4rem;
+  }
+  .rp-header-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 1.2rem;
+  }
+  .rp-logo {
+    display: flex; align-items: center; gap: .6rem; font-size: .85rem; opacity: .8;
+  }
+  .rp-logo-box {
+    background: white; color: var(--cosmic);
+    font-weight: 900; font-size: .9rem;
+    width: 1.8rem; height: 1.8rem;
+    display: grid; place-items: center; border-radius: 3px;
+  }
+  .rp-date { font-size: .8rem; opacity: .7; }
+  .rp-biz-name { font-size: 1.9rem; font-weight: 800; margin-bottom: .3rem; }
+  .rp-biz-meta { font-size: .9rem; opacity: .8; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .rp-biz-meta span { display: flex; align-items: center; gap: .3rem; }
+
+  .rp-score-bar {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 0;
+    background: #f0eef8;
+    border-bottom: 1px solid var(--lgray);
+  }
+  .rp-kpi {
+    padding: 1.2rem 1.5rem;
+    border-right: 1px solid var(--lgray);
+    text-align: center;
+  }
+  .rp-kpi:last-child { border-right: none; }
+  .rp-kpi-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--gray); margin-bottom: .3rem; }
+  .rp-kpi-value { font-size: 2rem; font-weight: 800; line-height: 1; }
+  .rp-kpi-sub   { font-size: .8rem; color: var(--gray); margin-top: .2rem; }
+
+  .rp-section { padding: 1.6rem 2.2rem; border-bottom: 1px solid var(--lgray); }
+  .rp-section:last-child { border-bottom: none; }
+  .rp-section-title {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--cosmic); font-weight: 700; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .rp-section-title::after {
+    content: ''; flex: 1; height: 1px; background: #EDE9FE;
+  }
+
+  .info-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: .8rem;
+  }
+  .info-item label { font-size: .75rem; color: var(--gray); display: block; margin-bottom: .2rem; }
+  .info-item span  { font-size: .95rem; font-weight: 600; color: var(--dark); }
+
+  .score-gauge-wrap { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+  .score-gauge {
+    text-align: center;
+    background: var(--offwhite); border-radius: 12px;
+    padding: 1.4rem 2rem;
+    flex-shrink: 0;
+  }
+  .score-big { font-size: 3.5rem; font-weight: 900; line-height: 1; }
+  .score-max { font-size: 1.2rem; color: var(--gray); }
+  .score-tag {
+    display: inline-block; padding: .3rem .8rem;
+    border-radius: 100px; font-size: .8rem; font-weight: 700;
+    margin-top: .5rem; color: white;
+  }
+
+  .score-breakdown { flex: 1; min-width: 200px; }
+  .score-breakdown h4 { font-size: .85rem; font-weight: 700; margin-bottom: .8rem; color: var(--dark); }
+  .breakdown-row { display: flex; align-items: center; gap: .8rem; margin-bottom: .6rem; }
+  .breakdown-label { font-size: .8rem; color: var(--gray); width: 130px; flex-shrink: 0; }
+  .breakdown-bar-wrap { flex: 1; background: var(--lgray); border-radius: 4px; height: 8px; overflow: hidden; }
+  .breakdown-bar { height: 100%; border-radius: 4px; transition: width .8s ease; }
+  .breakdown-val { font-size: .82rem; font-weight: 700; width: 35px; text-align: right; flex-shrink: 0; }
+
+  .score-insight {
+    background: var(--offwhite); border-radius: 8px;
+    padding: 1rem 1.2rem; font-size: .85rem; color: var(--dark); line-height: 1.6;
+    border-left: 3px solid var(--cosmic);
+    margin-top: 1rem;
+  }
+
+  .comp-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .comp-table th {
+    text-align: left; padding: .6rem .8rem;
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--gray); border-bottom: 2px solid var(--lgray);
+  }
+  .comp-table td { padding: .7rem .8rem; border-bottom: 1px solid var(--lgray); }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table tr.is-main td { background: #EDE9FE; font-weight: 700; }
+  .comp-table tr:hover td { background: var(--offwhite); }
+
+  .rank-badge {
+    display: inline-block; width: 1.6rem; height: 1.6rem;
+    border-radius: 50%; text-align: center; line-height: 1.6rem;
+    font-size: .75rem; font-weight: 700; color: white;
+  }
+
+  .stars-text { color: var(--gold); letter-spacing: .05em; }
+
+  .score-pill {
+    display: inline-block; padding: .25rem .6rem;
+    border-radius: 100px; font-size: .8rem; font-weight: 700; color: white;
+  }
+
+  .bar-mini-wrap { display: flex; align-items: center; gap: .5rem; }
+  .bar-mini { height: 6px; border-radius: 3px; min-width: 4px; }
+
+  .reviews-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .review-card {
+    background: var(--offwhite); border-radius: 10px;
+    padding: 1rem 1.2rem; border: 1px solid var(--lgray);
+  }
+  .review-header {
+    display: flex; align-items: center; gap: .7rem; margin-bottom: .6rem;
+  }
+  .review-avatar {
+    width: 2rem; height: 2rem; border-radius: 50%;
+    background: var(--cosmic); color: white;
+    font-weight: 700; font-size: .85rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .review-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .review-author { font-size: .88rem; font-weight: 700; }
+  .review-date   { font-size: .75rem; color: var(--gray); }
+  .review-stars  { color: var(--gold); font-size: .9rem; margin-bottom: .5rem; }
+  .review-text   { font-size: .83rem; color: #374151; line-height: 1.55; }
+  .review-source {
+    display: inline-block; margin-top: .5rem;
+    font-size: .7rem; color: var(--gray); background: var(--lgray);
+    padding: .1rem .4rem; border-radius: 4px;
+  }
+
+  .email-list { display: flex; flex-direction: column; gap: .5rem; }
+  .email-item {
+    display: flex; align-items: center; gap: .8rem;
+    background: var(--offwhite); border: 1px solid var(--lgray);
+    border-radius: 8px; padding: .7rem 1rem;
+  }
+  .email-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .email-addr { font-size: .9rem; font-weight: 600; color: var(--dark); flex: 1; }
+  .email-conf {
+    font-size: .72rem; font-weight: 700; padding: .2rem .6rem;
+    border-radius: 100px;
+  }
+  .email-conf.high   { background: #D1FAE5; color: #065F46; }
+  .email-conf.medium { background: #FEF9C3; color: #713F12; }
+  .email-conf.found  { background: #EDE9FE; color: #3D3570; }
+  .email-empty {
+    text-align: center; padding: 1.2rem; color: var(--gray); font-size: .88rem;
+  }
+
+  .mention-list { display: flex; flex-direction: column; gap: .7rem; }
+  .mention-item { border-left: 3px solid #EDE9FE; padding-left: .9rem; }
+  .mention-item a { font-size: .9rem; font-weight: 600; color: var(--cosmic); text-decoration: none; }
+  .mention-item a:hover { text-decoration: underline; }
+  .mention-item p { font-size: .82rem; color: var(--gray); margin-top: .2rem; line-height: 1.4; }
+
+  .rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .rec-card {
+    border-radius: 8px; padding: 1rem 1.2rem;
+    border-left: 4px solid;
+  }
+  .rec-card.priority-high { border-color: var(--red); background: #FEF2F2; }
+  .rec-card.priority-med  { border-color: var(--gold); background: #FFFBEB; }
+  .rec-card.priority-low  { border-color: var(--green); background: #F0FDF4; }
+  .rec-card h4 { font-size: .88rem; font-weight: 700; margin-bottom: .3rem; }
+  .rec-card p  { font-size: .82rem; color: var(--gray); line-height: 1.5; }
+
+  .rp-footer {
+    background: var(--offwhite); padding: 1rem 2.2rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .75rem; color: var(--gray);
+  }
+  .rp-footer strong { color: var(--cosmic); }
+
+  @media print {
+    body { background: white; }
+    header, .search-wrap, .report-actions, #status { display: none !important; }
+    #report { display: block !important; padding: 0; max-width: 100%; margin: 0; }
+    .report-page { box-shadow: none; border-radius: 0; }
+    .rp-section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">C</div>
+  <h1>Cosmic Reviews — Gerador de Relatórios</h1>
+  <span>Reputação Digital &amp; Análise de Concorrentes</span>
+</header>
+
+<div class="search-wrap">
+  <div class="card">
+    <h2>Gerar Relatório de Reputação</h2>
+    <p>Insere o nome do negócio ou um link do Google Maps para gerar um relatório profissional de reputação digital com análise de concorrentes, reviews reais e contactos.</p>
+
+    <label for="query">Nome do Negócio ou Link Google Maps</label>
+    <input type="text" id="query"
+      placeholder='Ex: "Camada Restaurante Braga" ou cole um URL do Google Maps'
+      autofocus>
+
+    <label for="apikey">Google Places API Key <span style="font-weight:400;color:#64748B">(opcional se o servidor já tiver configurada)</span></label>
+    <div class="api-row">
+      <div>
+        <input type="password" id="apikey" placeholder="AIza...">
+      </div>
+      <button class="eye-btn" onclick="toggleKey()">Mostrar</button>
+    </div>
+
+    <button class="btn" id="searchBtn" onclick="generateReport()">
+      <span>&#9679;</span> Gerar Relatório
+    </button>
+
+    <div id="apiStatus" class="api-badges" style="margin-top:.8rem"></div>
+
+    <div class="hint" id="apiHint">
+      <strong>APIs disponíveis:</strong><br>
+      &#128273; <strong>Google Places API (New)</strong> — dados do Maps &amp; concorrentes<br>
+      &#128269; <strong>Brave Search</strong> — menções web do negócio<br>
+      &#128240; <strong>SerpAPI</strong> — reviews reais do Google (texto + rating)<br>
+      &#128231; <strong>AnyMailFinder</strong> — emails de contacto do negócio
+    </div>
+  </div>
+</div>
+
+<div id="status">
+  <div class="status-msg" id="statusMsg"></div>
+</div>
+
+<div id="report">
+  <div class="report-actions">
+    <button class="btn-outline" onclick="window.print()">&#128438; Imprimir / PDF</button>
+    <button class="btn-outline" onclick="document.getElementById('report').style.display='none';document.querySelector('.search-wrap').style.display='block'">&#8592; Nova Pesquisa</button>
+  </div>
+  <div class="report-page" id="reportPage"></div>
+</div>
+
+<script>
+const savedKey = sessionStorage.getItem('cr_apikey') || '';
+if (savedKey) document.getElementById('apikey').value = savedKey;
+
+let serverConfig = { hasDefaultKey: false, hasBrave: false, hasSerpApi: false, hasAnyMailFinder: false };
+
+fetch('/api/config').then(r => r.json()).then(cfg => {
+  serverConfig = cfg;
+  const wrap = document.getElementById('apiStatus');
+  wrap.innerHTML = [
+    { label: 'Google Places', key: 'hasDefaultKey' },
+    { label: 'Brave Search',  key: 'hasBrave'      },
+    { label: 'SerpAPI',       key: 'hasSerpApi'    },
+    { label: 'AnyMailFinder', key: 'hasAnyMailFinder' }
+  ].map(a => `<span class="api-badge ${cfg[a.key] ? 'on' : 'off'}">${cfg[a.key] ? '✓' : '✗'} ${a.label}</span>`).join('');
+}).catch(() => {});
+
+function toggleKey() {
+  const el = document.getElementById('apikey');
+  const btn = event.target;
+  if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Ocultar'; }
+  else                         { el.type = 'password'; btn.textContent = 'Mostrar'; }
+}
+
+function showStatus(msg, type='loading') {
+  const wrap = document.getElementById('status');
+  const el   = document.getElementById('statusMsg');
+  wrap.style.display = 'block';
+  el.className = 'status-msg ' + type;
+  el.innerHTML = type === 'loading'
+    ? `<div class="spinner"></div> ${msg}`
+    : `<span style="font-size:1.1rem">&#9888;</span> ${msg}`;
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+
+function stars(rating) {
+  const full  = Math.floor(rating);
+  const half  = rating - full >= 0.5 ? 1 : 0;
+  const empty = 5 - full - half;
+  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
+}
+
+function scoreColor(score) {
+  if (score >= 8.5) return '#10B981';
+  if (score >= 7.0) return '#3B82F6';
+  if (score >= 5.5) return '#F59E0B';
+  if (score >= 4.0) return '#EF4444';
+  return '#7F1D1D';
+}
+function scoreTag(score) {
+  if (score >= 8.5) return 'Excelente';
+  if (score >= 7.0) return 'Muito Bom';
+  if (score >= 5.5) return 'Bom';
+  if (score >= 4.0) return 'A Melhorar';
+  return 'Crítico';
+}
+
+function buildRecommendations(data) {
+  const recs = [];
+  const { rating, reviewCount, score, rankPosition, totalInArea, competitors } = data;
+
+  if (reviewCount < 50) recs.push({
+    priority: 'high',
+    title: 'Volume de Reviews Muito Baixo',
+    text: `Apenas ${reviewCount} avaliações. O sistema de pedidos automáticos (SMS/WhatsApp) após cada visita pode triplicar este número em 60 dias.`
+  });
+
+  if (rating < 4.0) recs.push({
+    priority: 'high',
+    title: 'Classificação Abaixo da Média',
+    text: `${rating}★ está abaixo do limiar de 4 estrelas que o Google valoriza. Identificar as causas das avaliações negativas e responder com profissionalismo é o primeiro passo.`
+  });
+
+  if (rating >= 4.0 && rating < 4.5) recs.push({
+    priority: 'med',
+    title: 'Classificação a Melhorar',
+    text: `${rating}★ é bom, mas atingir 4.5+ aumenta significativamente a visibilidade no Google Maps. O filtro de experiência do Cosmic Reviews evita reviews negativas públicas.`
+  });
+
+  const topComp = competitors[0];
+  if (topComp && topComp.score > score) recs.push({
+    priority: rankPosition <= 3 ? 'med' : 'high',
+    title: `Concorrente "${topComp.name}" em Vantagem`,
+    text: `Pontuação de ${topComp.score}/10 vs. ${score}/10. A diferença está principalmente no volume de reviews (${topComp.reviewCount} vs. ${reviewCount}).`
+  });
+
+  if (rankPosition === 1) recs.push({
+    priority: 'low',
+    title: 'Lider de Mercado — Manter Posição',
+    text: `Parabéns! Estás em 1.º lugar na área. Continua a responder a todas as reviews e a publicar Google Posts regulares para manter a vantagem.`
+  });
+
+  if (recs.length === 0) recs.push({
+    priority: 'low',
+    title: 'Boa Reputação — Optimizar SEO Local',
+    text: 'O Agente SEO do Cosmic Reviews pode responder automaticamente às reviews com palavras-chave relevantes, reforçando o ranking orgânico local.'
+  });
+
+  recs.push({
+    priority: 'med',
+    title: 'Activar Respostas Automáticas com IA',
+    text: 'O Cosmic Reviews 2 responde automaticamente a cada review com respostas personalizadas com IA, incorporando palavras-chave SEO — sem esforço da tua parte.'
+  });
+
+  return recs.slice(0, 4);
+}
+
+async function generateReport() {
+  const query  = document.getElementById('query').value.trim();
+  const apiKey = document.getElementById('apikey').value.trim();
+
+  if (!query) { showStatus('Por favor insere um nome ou link de negócio.', 'error'); return; }
+
+  if (!apiKey && !serverConfig.hasDefaultKey && !serverConfig.hasSerpApi) {
+    showStatus('Por favor insere a tua Google Places API Key (o servidor não tem chave configurada).', 'error');
+    return;
+  }
+
+  if (apiKey) sessionStorage.setItem('cr_apikey', apiKey);
+
+  document.getElementById('searchBtn').disabled = true;
+  document.getElementById('report').style.display = 'none';
+  showStatus('A pesquisar o negócio no Google Maps...', 'loading');
+
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, apiKey })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Erro desconhecido');
+
+    hideStatus();
+    renderReport(data);
+  } catch (err) {
+    showStatus(err.message, 'error');
+  } finally {
+    document.getElementById('searchBtn').disabled = false;
+  }
+}
+
+function renderReport(d) {
+  const now    = new Date().toLocaleDateString('pt-PT', { day:'2-digit', month:'long', year:'numeric' });
+  const col    = scoreColor(d.score);
+  const tag    = scoreTag(d.score);
+  const ratingScore  = ((d.rating / 5) * 5).toFixed(1);
+  const volumeScore  = ((Math.min(d.reviewCount, 1000) / 1000) * 5).toFixed(1);
+  const recs   = buildRecommendations(d);
+
+  const allEntries = [
+    { name: d.name, rating: d.rating, reviewCount: d.reviewCount, score: d.score, isMain: true },
+    ...d.competitors
+  ].sort((a, b) => b.score - a.score).map((c, i) => ({ ...c, rank: i + 1 }));
+
+  const rankColors = ['#F59E0B', '#94A3B8', '#CD7F32'];
+
+  const compRows = allEntries.map(c => {
+    const cCol  = scoreColor(c.score);
+    const barPct = Math.round((c.score / 10) * 100);
+    return `<tr class="${c.isMain ? 'is-main' : ''}">
+      <td><span class="rank-badge" style="background:${rankColors[c.rank-1] || '#64748B'}">${c.rank}</span></td>
+      <td><strong>${c.name}</strong>${c.isMain ? ' <em style="color:#5B50A2;font-size:.75rem">(este negócio)</em>' : ''}</td>
+      <td><span class="stars-text">${stars(c.rating)}</span> <strong>${c.rating.toFixed(1)}</strong></td>
+      <td>${c.reviewCount.toLocaleString('pt-PT')}</td>
+      <td>
+        <div class="bar-mini-wrap">
+          <div style="width:70px;background:#E2E8F0;border-radius:3px;height:6px;overflow:hidden">
+            <div class="bar-mini" style="width:${barPct}%;background:${cCol}"></div>
+          </div>
+          <span class="score-pill" style="background:${cCol}">${c.score.toFixed(1)}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const recCards = recs.map(r => `
+    <div class="rec-card priority-${r.priority}">
+      <h4>${r.title}</h4>
+      <p>${r.text}</p>
+    </div>`).join('');
+
+  let reviewsSection = '';
+  if (d.googleReviews && d.googleReviews.length > 0) {
+    const reviewCards = d.googleReviews.map(r => {
+      const initial = (r.author || 'A')[0].toUpperCase();
+      const avatarHtml = r.avatar
+        ? `<img src="${r.avatar}" alt="${initial}" onerror="this.style.display='none'">`
+        : initial;
+      return `
+        <div class="review-card">
+          <div class="review-header">
+            <div class="review-avatar">${avatarHtml}</div>
+            <div>
+              <div class="review-author">${r.author}</div>
+              <div class="review-date">${r.date}</div>
+            </div>
+          </div>
+          <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+          <div class="review-text">${r.text || '<em style="color:#94A3B8">Sem texto de review.</em>'}</div>
+          <span class="review-source">Google Maps</span>
+        </div>`;
+    }).join('');
+    reviewsSection = `
+      <div class="rp-section">
+        <div class="rp-section-title">Avaliações Recentes (Google)</div>
+        <div class="reviews-grid">${reviewCards}</div>
+      </div>`;
+  }
+
+  let emailsSection = '';
+  if (d.contactEmails && d.contactEmails.length > 0) {
+    const emailItems = d.contactEmails.map(e => {
+      const confClass = e.confidence === 'high' ? 'high' : e.confidence === 'medium' ? 'medium' : 'found';
+      const confLabel = e.confidence === 'high' ? 'Verificado' : e.confidence === 'medium' ? 'Provável' : 'Encontrado';
+      return `
+        <div class="email-item">
+          <span class="email-icon">✉️</span>
+          <span class="email-addr">${e.email}</span>
+          <span class="email-conf ${confClass}">${confLabel}</span>
+        </div>`;
+    }).join('');
+    emailsSection = `
+      <div class="rp-section">
+        <div class="rp-section-title">Emails de Contacto</div>
+        <div class="email-list">${emailItems}</div>
+      </div>`;
+  }
+
+  let mentionsSection = '';
+  if (d.webMentions && d.webMentions.length > 0) {
+    const mentions = d.webMentions.map(m => `
+      <div class="mention-item">
+        <a href="${m.url}" target="_blank">${m.title}</a>
+        <p>${m.snippet || ''}</p>
+      </div>`).join('');
+    mentionsSection = `
+      <div class="rp-section">
+        <div class="rp-section-title">Menções na Web</div>
+        <div class="mention-list">${mentions}</div>
+      </div>`;
+  }
+
+  const html = `
+  <div class="rp-header">
+    <div class="rp-header-top">
+      <div class="rp-logo">
+        <div class="rp-logo-box">C</div>
+        Cosmic Reviews 2 — Relatório de Reputação
+      </div>
+      <div class="rp-date">Gerado em ${now}</div>
+    </div>
+    <div class="rp-biz-name">${d.name}</div>
+    <div class="rp-biz-meta">
+      <span>&#128205; ${d.address}</span>
+      ${d.category ? `<span>&#127981; ${d.category}</span>` : ''}
+      ${d.phone    ? `<span>&#128222; ${d.phone}</span>` : ''}
+      ${d.website  ? `<span>&#127760; <a href="${d.website}" target="_blank" style="color:rgba(255,255,255,.85)">${d.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a></span>` : ''}
+    </div>
+  </div>
+
+  <div class="rp-score-bar">
+    <div class="rp-kpi">
+      <div class="rp-kpi-label">Classificação Google</div>
+      <div class="rp-kpi-value" style="color:${d.rating>=4?'#10B981':'#EF4444'}">${d.rating.toFixed(1)}</div>
+      <div class="rp-kpi-sub"><span class="stars-text">${stars(d.rating)}</span></div>
+    </div>
+    <div class="rp-kpi">
+      <div class="rp-kpi-label">Total de Avaliações</div>
+      <div class="rp-kpi-value" style="color:#5B50A2">${d.reviewCount.toLocaleString('pt-PT')}</div>
+      <div class="rp-kpi-sub">no Google Maps</div>
+    </div>
+    <div class="rp-kpi">
+      <div class="rp-kpi-label">Pontuação de Reputação</div>
+      <div class="rp-kpi-value" style="color:${col}">${d.score.toFixed(1)}</div>
+      <div class="rp-kpi-sub"><span class="score-pill" style="background:${col}">${tag}</span></div>
+    </div>
+    <div class="rp-kpi">
+      <div class="rp-kpi-label">Posição na Área</div>
+      <div class="rp-kpi-value" style="color:#0F172A">${d.rankPosition}.º</div>
+      <div class="rp-kpi-sub">de ${d.totalInArea} negócios</div>
+    </div>
+  </div>
+
+  <div class="rp-section">
+    <div class="rp-section-title">Pontuação de Reputação — Detalhes</div>
+    <div class="score-gauge-wrap">
+      <div class="score-gauge">
+        <div class="score-big" style="color:${col}">${d.score.toFixed(1)}</div>
+        <div class="score-max">&nbsp;/ 10</div>
+        <div class="score-tag" style="background:${col}">${tag}</div>
+      </div>
+      <div class="score-breakdown">
+        <h4>Composição da Pontuação</h4>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Qualidade (Rating)</span>
+          <div class="breakdown-bar-wrap">
+            <div class="breakdown-bar" style="width:${(parseFloat(ratingScore)/5)*100}%;background:#5B50A2"></div>
+          </div>
+          <span class="breakdown-val">${ratingScore}/5</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Volume (Avaliações)</span>
+          <div class="breakdown-bar-wrap">
+            <div class="breakdown-bar" style="width:${(parseFloat(volumeScore)/5)*100}%;background:#00B4D8"></div>
+          </div>
+          <span class="breakdown-val">${volumeScore}/5</span>
+        </div>
+        <div class="score-insight">
+          ${d.reviewCount < 50
+            ? `Com apenas <strong>${d.reviewCount} avaliações</strong>, o maior impacto imediato seria aumentar o volume — cada 100 reviews novas adiciona ~0,5 pontos.`
+            : d.rating < 4.3
+            ? `A classificação de <strong>${d.rating}★</strong> está a limitar a pontuação. Focar em qualidade de serviço e responder activamente a reviews negativas.`
+            : `Boa base! Para chegar a 9+/10 precisas de ${Math.max(0, 1000 - d.reviewCount)} reviews adicionais e manter a classificação acima de 4.5★.`}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  ${reviewsSection}
+
+  ${emailsSection}
+
+  <div class="rp-section">
+    <div class="rp-section-title">Análise de Concorrentes na Área (3 km)</div>
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Negócio</th>
+          <th>Rating</th>
+          <th>N.º Reviews</th>
+          <th>Pontuação</th>
+        </tr>
+      </thead>
+      <tbody>${compRows}</tbody>
+    </table>
+  </div>
+
+  ${mentionsSection}
+
+  <div class="rp-section">
+    <div class="rp-section-title">Recomendações</div>
+    <div class="rec-grid">${recCards}</div>
+  </div>
+
+  <div class="rp-footer">
+    <div>Gerado por <strong>Cosmic Reviews 2</strong> — cosmiquestions.com</div>
+    <div>&#128222; +351 939 673 700 &nbsp;|&nbsp; cosmic-reviews@cosmoquestions.com</div>
+  </div>`;
+
+  document.getElementById('reportPage').innerHTML = html;
+  document.getElementById('report').style.display = 'block';
+  document.querySelector('.search-wrap').style.display = 'none';
+  document.getElementById('reportPage').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') generateReport();
+});
+</script>
+</body>
+</html>
