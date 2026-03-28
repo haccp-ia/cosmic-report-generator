@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "framework": null,
+    "framework": null,
   "builds": [
     { "src": "server.js", "use": "@vercel/node" }
   ],
