@@ -1,6 +1,7 @@
 /**
  * Cosmic Reviews — Gerador de Relatórios de Reputação Digital
  * Node.js + Express + Google Places API (New) + Brave Search + SerpAPI + AnyMailFinder
+  * Rebuild trigger: Fixing Vercel deployment configuration
  */
 require('dotenv').config();
 const express = require('express');
