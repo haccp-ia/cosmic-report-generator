@@ -1,16 +1,22 @@
-  "version": 2,
-  "framework": null,
-    "framework": null,
-  "builds": [
-    { "src": "server.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/server.js" }
-  ],
-  "env": {
-    "GOOGLE_PLACES_API_KEY": "@google_places_api_key",
-    "BRAVE_SEARCH_TOKEN":    "@brave_search_token",
-    "SERP_API_KEY":          "@serp_api_key",
-    "ANYMAILFINDER_KEY":     "@anymailfinder_key"
-  }
+{
+    "version": 2,
+    "builds": [
+          {
+                  "src": "server.js",
+                  "use": "@vercel/node"
+          }
+    ],
+    "routes": [
+          {
+                  "src": "/(.*)",
+                  "dest": "/server.js"
+          }
+    ],
+    "env": {
+          "GOOGLE_PLACES_API_KEY": "@google_places_api_key",
+          "BRAVE_SEARCH_TOKEN": "@brave_search_token",
+          "SERP_API_KEY": "@serp_api_key",
+          "ANYMAILFINDER_KEY": "@anymailfinder_key"
+    },
+    "framework": null
 }
